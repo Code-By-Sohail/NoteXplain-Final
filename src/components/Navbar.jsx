@@ -95,7 +95,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleTheme }) => {
                     <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
                 <Link to="/" className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xl cursor-pointer">
-                    <Code2 className="w-7 h-7" />
+                    <img src="/logo.png" alt="NotesXplain Logo" className="w-8 h-8 object-contain" />
                     <span>NotesXplain</span>
                 </Link>
             </div>
