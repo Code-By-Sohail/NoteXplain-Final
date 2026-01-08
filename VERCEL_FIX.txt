@@ -1,0 +1,3 @@
+This is a test file to check if GitHub Desktop is looking at the right folder.
+If you see this in GitHub Desktop, it means the connection is working.
+You can ignore or delete this file later.
