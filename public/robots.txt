@@ -1,6 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<robots>
-  User-agent: *
-  Allow: /
-  Sitemap: https://notesxplain.vercel.app/sitemap.xml
-</robots>
+User-agent: *
+Allow: /
+Sitemap: https://notesxplain.vercel.app/sitemap.xml
