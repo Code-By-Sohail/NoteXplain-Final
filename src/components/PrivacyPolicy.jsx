@@ -43,7 +43,7 @@ const PrivacyPolicy = () => {
                         {/* Introduction */}
                         <section>
                             <p className="text-lg leading-relaxed">
-                                Welcome to <strong className="text-emerald-600 dark:text-emerald-400">NoteXplain</strong>.
+                                Welcome to <strong className="text-emerald-600 dark:text-emerald-400">NotesXplain</strong>.
                                 We are committed to protecting your privacy and ensuring you have a positive experience on our website.
                                 This policy outlines how we collect, use, and protect your information.
                             </p>

@@ -40,7 +40,7 @@ const CodingUniverse = ({ isLanding = false }) => {
                     </div>
                     <div><span className="text-blue-600 dark:text-blue-400">def</span> <span className="text-yellow-600 dark:text-yellow-300">learn_concept</span>(subject):</div>
                     <div className="pl-4"><span className="text-purple-600 dark:text-purple-400">if</span> subject == <span className="text-green-600 dark:text-green-300">"Hard"</span>:</div>
-                    <div className="pl-8"><span className="text-purple-600 dark:text-purple-400">return</span> <span className="text-orange-600 dark:text-orange-400">NoteXplain.simplify()</span></div>
+                    <div className="pl-8"><span className="text-purple-600 dark:text-purple-400">return</span> <span className="text-orange-600 dark:text-orange-400">NotesXplain.simplify()</span></div>
                     <div className="pl-4"><span className="text-purple-600 dark:text-purple-400">print</span>(<span className="text-green-600 dark:text-green-300">"Easy!"</span>)</div>
                 </div>
             </div>
@@ -51,10 +51,10 @@ const CodingUniverse = ({ isLanding = false }) => {
                     <div className="flex justify-between items-center mb-2 border-b border-gray-200 dark:border-gray-700/50 pb-1">
                         <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">C++</span>
                     </div>
-                    <div><span className="text-orange-600 dark:text-orange-400">#include</span> <span className="text-green-600 dark:text-green-300">&lt;notexplain&gt;</span></div>
+                    <div><span className="text-orange-600 dark:text-orange-400">#include</span> <span className="text-green-600 dark:text-green-300">&lt;notesxplain&gt;</span></div>
                     <div><span className="text-blue-600 dark:text-blue-400">void</span> <span className="text-yellow-600 dark:text-yellow-300">pass_exam</span>() {'{'}</div>
                     <div className="pl-4"><span className="text-purple-600 dark:text-purple-400">while</span>(exam_near) {'{'}</div>
-                    <div className="pl-8">NoteXplain::<span className="text-blue-600 dark:text-blue-300">read</span>();</div>
+                    <div className="pl-8">NotesXplain::<span className="text-blue-600 dark:text-blue-300">read</span>();</div>
                     <div className="pl-8">confidence<span className="text-orange-600 dark:text-orange-400">++</span>;</div>
                     <div className="pl-4">{'}'}</div>
                     <div>{'}'}</div>

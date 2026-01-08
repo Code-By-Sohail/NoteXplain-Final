@@ -56,7 +56,7 @@ const SemesterSelect = () => {
                             <GraduationCap className="w-8 h-8 text-white" />
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-emerald-800 to-gray-900 dark:from-white dark:to-gray-400 pr-2">
-                            NoteXplain
+                            NotesXplain
                         </h1>
                     </div>
 

@@ -2,5 +2,5 @@
 <robots>
   User-agent: *
   Allow: /
-  Sitemap: https://notexplain.vercel.app/sitemap.xml
+  Sitemap: https://notesxplain.vercel.app/sitemap.xml
 </robots>

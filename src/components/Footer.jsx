@@ -14,7 +14,7 @@ const Footer = () => {
                                 <div className="w-4 h-4 rounded-full border-2 border-white/20" />
                             </div>
                             <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                NoteXplain
+                                NotesXplain
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
@@ -64,7 +64,7 @@ const Footer = () => {
 
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-gray-200/50 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
-                    <p>© 2025 NoteXplain. Open Source.</p>
+                    <p>© 2025 NotesXplain. Open Source.</p>
                     <div className="flex items-center gap-1">
                         <span>Made with</span>
                         <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" />

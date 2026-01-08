@@ -43,7 +43,7 @@ const AboutUs = () => {
                 <div className="text-center mb-12">
                     <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
-                            About NoteXplain
+                            About NotesXplain
                         </span>
                     </h1>
                     <p className="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
@@ -62,7 +62,7 @@ const AboutUs = () => {
                         </div>
                         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                             We know the struggle. The night before exams, the endless search for decent notes, the confusing tutorials.
-                            **NoteXplain** was born out of that frustration. We built this platform to be the resource we wished we had.
+                            **NotesXplain** was born out of that frustration. We built this platform to be the resource we wished we had.
                         </p>
                     </div>
 
@@ -72,7 +72,7 @@ const AboutUs = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
                             <BookOpen className="w-6 h-6" />
-                            <h2 className="text-xl font-bold uppercase tracking-wider">Why NoteXplain?</h2>
+                            <h2 className="text-xl font-bold uppercase tracking-wider">Why NotesXplain?</h2>
                         </div>
                         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                             Most educational sites are cluttered and complex. We keep it **simple**.

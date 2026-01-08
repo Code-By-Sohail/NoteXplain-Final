@@ -96,7 +96,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleTheme }) => {
                 </button>
                 <Link to="/" className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xl cursor-pointer">
                     <Code2 className="w-7 h-7" />
-                    <span>NoteXplain</span>
+                    <span>NotesXplain</span>
                 </Link>
             </div>
 
