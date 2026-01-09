@@ -148,6 +148,14 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleTheme }) => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
+                <Link
+                    to="/playground"
+                    className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-semibold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                >
+                    <Code2 className="w-4 h-4" />
+                    <span>Compiler</span>
+                </Link>
+
                 <button
                     onClick={toggleTheme}
                     className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"

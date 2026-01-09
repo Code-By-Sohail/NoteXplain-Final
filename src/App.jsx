@@ -8,6 +8,7 @@ import LandingPage from './components/LandingPage';
 import AboutUs from './components/AboutUs';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { courseData } from './data';
+import CodePlayground from './components/playground/CodePlayground';
 
 // Helper component to redirect to the first topic of the selected subject
 const SubjectRedirect = () => {
@@ -41,6 +42,11 @@ function App() {
         <Routes>
           {/* Landing Page Route */}
           <Route path="/" element={<LandingPage />} />
+
+          {/* Playground Route - Uses Layout but with special handling */}
+          <Route path="/playground" element={<Layout />}>
+            <Route index element={<CodePlayground />} />
+          </Route>
 
           {/* About Us Route */}
           <Route path="/about" element={<AboutUs />} />

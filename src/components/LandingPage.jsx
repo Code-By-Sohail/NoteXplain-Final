@@ -78,12 +78,16 @@ const LandingPage = () => {
                 {/* Feature Grid (Enhanced) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8">
                     {[
-                        { icon: BookOpen, label: "Smart Notes", desc: "Exam-focused" },
-                        { icon: Code2, label: "Live Coding", desc: "Practice Logic" },
-                        { icon: GraduationCap, label: "Toppers' Choice", desc: "Trusted Content" },
-                        { icon: BrainCircuit, label: "Quick Revision", desc: "Last Minute" }
+                        { icon: BookOpen, label: "Smart Notes", desc: "Exam-focused", path: "/semesters" },
+                        { icon: Code2, label: "Live Coding", desc: "Practice Logic", path: "/playground" },
+                        { icon: GraduationCap, label: "Toppers' Choice", desc: "Trusted Content", path: "/semesters" },
+                        { icon: BrainCircuit, label: "Quick Revision", desc: "Last Minute", path: "/semesters" }
                     ].map((feature, idx) => (
-                        <div key={idx} className="group flex flex-col items-center gap-3 p-6 rounded-3xl bg-white/60 dark:bg-[#262626]/40 border border-white/40 dark:border-white/5 backdrop-blur-md hover:bg-white/80 dark:hover:bg-[#262626]/80 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer">
+                        <div
+                            key={idx}
+                            onClick={() => navigate(feature.path)}
+                            className="group flex flex-col items-center gap-3 p-6 rounded-3xl bg-white/60 dark:bg-[#262626]/40 border border-white/40 dark:border-white/5 backdrop-blur-md hover:bg-white/80 dark:hover:bg-[#262626]/80 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer"
+                        >
                             <div className="p-4 rounded-xl bg-gradient-to-br from-gray-100 to-white dark:from-gray-800 dark:to-gray-900 shadow-inner group-hover:scale-110 transition-transform duration-300">
                                 <feature.icon className="w-8 h-8 text-gray-700 dark:text-gray-300 group-hover:text-emerald-500 transition-colors" />
                             </div>

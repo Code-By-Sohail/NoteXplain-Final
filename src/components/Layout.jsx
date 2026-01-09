@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import SidebarLeft from './SidebarLeft';
 import SidebarRight from './SidebarRight';
@@ -13,6 +13,9 @@ const Layout = () => {
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     // Initial theme effect handled by ThemeProvider now
+
+    const location = useLocation();
+    const isPlayground = location.pathname === '/playground';
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#181818] text-gray-900 dark:text-gray-100 transition-colors duration-300 font-sans selection:bg-emerald-100 selection:text-emerald-900 dark:selection:bg-emerald-900 dark:selection:text-emerald-100 relative overflow-hidden">
@@ -44,16 +47,18 @@ const Layout = () => {
                 )}
 
                 {/* Main Content */}
-                <main className="flex-1 min-w-0 overflow-y-auto scroll-smooth">
-                    <div className="max-w-4xl mx-auto px-4 py-8 md:px-8 lg:px-12 pb-24">
+                <main className={`flex-1 min-w-0 overflow-y-auto scroll-smooth ${isPlayground ? 'h-full' : ''}`}>
+                    <div className={`${isPlayground ? 'w-full h-full p-0' : 'max-w-4xl mx-auto px-4 py-8 md:px-8 lg:px-12 pb-24'}`}>
                         <Outlet />
                     </div>
                 </main>
 
-                {/* Right Sidebar (Desktop only) */}
-                <aside className="hidden xl:block w-64 pt-8 sticky top-0 h-full overflow-y-auto pr-6">
-                    <SidebarRight />
-                </aside>
+                {/* Right Sidebar (Desktop only) - Hide on Playground */}
+                {!isPlayground && (
+                    <aside className="hidden xl:block w-64 pt-8 sticky top-0 h-full overflow-y-auto pr-6">
+                        <SidebarRight />
+                    </aside>
+                )}
             </div>
         </div>
     );
