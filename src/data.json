@@ -106,7 +106,32 @@
                         "title": "Practical 10 ",
                         "content": "**10) Aim: Solve the following problems using Backtracking:4-Queen Problem and 8-Queen Problem**\n\n<mark>A. 4-Queen Problem (Backtracking)</mark>\n\n\n```c\n#include <stdio.h>\n#define N 4\n\nint board[N][N];\n\nint isSafe(int row, int col)\n{\n    for (int i = 0; i < col; i++)\n        if (board[row][i])\n            return 0;\n\n    for (int i = row, j = col; i >= 0 && j >= 0; i--, j--)\n        if (board[i][j])\n            return 0;\n\n    for (int i = row, j = col; i < N && j >= 0; i++, j--)\n        if (board[i][j])\n            return 0;\n\n    return 1;\n}\n\nint solveNQueen(int col)\n{\n    if (col >= N)\n        return 1;\n\n    for (int i = 0; i < N; i++)\n    {\n        if (isSafe(i, col))\n        {\n            board[i][col] = 1;\n\n            if (solveNQueen(col + 1))\n                return 1;\n\n            board[i][col] = 0;\n        }\n    }\n    return 0;\n}\n\nvoid printBoard()\n{\n    for (int i = 0; i < N; i++)\n    {\n        for (int j = 0; j < N; j++)\n            printf(\"%d \", board[i][j]);\n        printf(\"\\n\");\n    }\n}\n\nint main()\n{\n    if (solveNQueen(0))\n    {\n        printf(\"Solution for 4-Queen Problem:\\n\");\n        printBoard();\n    }\n    else\n    {\n        printf(\"No solution exists\\n\");\n    }\n    return 0;\n}\n\n```\n**Note: The data and solutions shown in these programs are only for understanding and demonstration purposes.Output may vary depending on the system and problem size.** \n```output\nSolution for 4-Queen Problem:\n0 0 1 0\n1 0 0 0\n0 0 0 1\n0 1 0 0\n\n```\n\n\n--------------------------------------------------------------------------------------------------\n\n<mark>B. 8-Queen Problem (Backtracking)</mark>\n\n\n```c\n#include <stdio.h>\n#define N 8\n\nint board[N][N];\n\nint isSafe(int row, int col)\n{\n    for (int i = 0; i < col; i++)\n        if (board[row][i])\n            return 0;\n\n    for (int i = row, j = col; i >= 0 && j >= 0; i--, j--)\n        if (board[i][j])\n            return 0;\n\n    for (int i = row, j = col; i < N && j >= 0; i++, j--)\n        if (board[i][j])\n            return 0;\n\n    return 1;\n}\n\nint solveNQueen(int col)\n{\n    if (col >= N)\n        return 1;\n\n    for (int i = 0; i < N; i++)\n    {\n        if (isSafe(i, col))\n        {\n            board[i][col] = 1;\n\n            if (solveNQueen(col + 1))\n                return 1;\n\n            board[i][col] = 0;\n        }\n    }\n    return 0;\n}\n\nvoid printBoard()\n{\n    for (int i = 0; i < N; i++)\n    {\n        for (int j = 0; j < N; j++)\n            printf(\"%d \", board[i][j]);\n        printf(\"\\n\");\n    }\n}\n\nint main()\n{\n    if (solveNQueen(0))\n    {\n        printf(\"Solution for 8-Queen Problem:\\n\");\n        printBoard();\n    }\n    else\n    {\n        printf(\"No solution exists\\n\");\n    }\n    return 0;\n}\n\n```\n**Note: The data and solutions shown in these programs are only for understanding and demonstration purposes.Output may vary depending on the system and problem size.** \n```output\nSolution for 8-Queen Problem:\n1 0 0 0 0 0 0 0\n0 0 0 0 1 0 0 0\n0 0 0 0 0 0 1 0\n0 0 0 0 0 1 0 0\n0 1 0 0 0 0 0 0\n0 0 0 1 0 0 0 0\n0 0 0 0 0 0 0 1\n0 0 1 0 0 0 0 0\n\n```\n<mark>Time Complexity Table</mark>\n| Problem | Best Case | Average Case | Worst Case |\n| :--- | :--- | :--- | :--- |\n| **4-Queen Problem** | O(N!) | O(N!) | O(N!) |\n| **8-Queen Problem** | O(N!) | O(N!) | O(N!) |\n"
                     }
-                ]
+                ],
+                "locked": false
+            },
+            {
+                "id": "os--be04000221",
+                "title": "OS  (BE04000221)",
+                "chapters": [],
+                "locked": true
+            },
+            {
+                "id": "oop--be04000231",
+                "title": "OOP  (BE04000231)",
+                "chapters": [],
+                "locked": true
+            },
+            {
+                "id": "coa-be04000251",
+                "title": "COA (BE04000251)",
+                "chapters": [],
+                "locked": true
+            },
+            {
+                "id": "dm--be04000261",
+                "title": "DM  (BE04000261)",
+                "chapters": [],
+                "locked": true
             }
         ]
     },
