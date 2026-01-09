@@ -1,6 +1,7 @@
 import React from 'react';
 import { Github, Linkedin, Twitter, Heart, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Logo from './Logo';
 
 const Footer = () => {
     return (
@@ -10,9 +11,7 @@ const Footer = () => {
                     {/* Brand Section */}
                     <div className="md:col-span-2 space-y-4">
                         <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg shadow-emerald-500/20">
-                                <div className="w-4 h-4 rounded-full border-2 border-white/20" />
-                            </div>
+                            <Logo className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
                                 NotesXplain
                             </span>

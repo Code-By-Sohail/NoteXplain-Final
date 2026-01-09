@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { courseData } from '../data';
 import { Search, Moon, Sun, Menu, Code2 } from 'lucide-react';
 
+import Logo from './Logo';
+
 const Navbar = ({ toggleSidebar, isDarkMode, toggleTheme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -95,7 +97,7 @@ const Navbar = ({ toggleSidebar, isDarkMode, toggleTheme }) => {
                     <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
                 <Link to="/" className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xl cursor-pointer">
-                    <img src="/logo.png" alt="NotesXplain Logo" className="w-8 h-8 object-contain" />
+                    <Logo className="w-8 h-8" />
                     <span>NotesXplain</span>
                 </Link>
             </div>

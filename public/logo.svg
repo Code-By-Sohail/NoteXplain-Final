@@ -1,0 +1,17 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Minimalist NX Design - Transparent Background -->
+  
+  <!-- Colors hardcoded for favicon usage -->
+  
+  <!-- Left Vertical -->
+  <path d="M20 15 V85" stroke="#10b981" stroke-width="14" stroke-linecap="butt" />
+  
+  <!-- Right Vertical -->
+  <path d="M80 15 V85" stroke="#10b981" stroke-width="14" stroke-linecap="butt" />
+
+  <!-- Diagonal TL to BR -->
+  <path d="M20 15 L80 85" stroke="#10b981" stroke-width="14" stroke-linecap="butt" />
+
+  <!-- Diagonal TR to BL -->
+  <path d="M80 15 L20 85" stroke="#10b981" stroke-width="14" stroke-linecap="butt" />
+</svg>

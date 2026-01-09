@@ -5,6 +5,7 @@ import { courseData } from '../data';
 import { UserGlowingCard } from './UserGlowingCard';
 import { useTheme } from './ThemeContext';
 import CodingUniverse from './CodingUniverse';
+import Logo from './Logo';
 
 const SemesterSelect = () => {
     const navigate = useNavigate();
@@ -47,14 +48,10 @@ const SemesterSelect = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
             </div>
 
-
-
             <div className="max-w-7xl mx-auto relative z-10">
                 <header className="mb-20 text-center animate-fade-in-up">
                     <div className="inline-flex items-center gap-3 mb-6 p-2 rounded-2xl bg-white/5 border border-black/5 dark:border-white/10 backdrop-blur-sm">
-                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/20">
-                            <GraduationCap className="w-8 h-8 text-white" />
-                        </div>
+                        <Logo className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
                         <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-emerald-800 to-gray-900 dark:from-white dark:to-gray-400 pr-2">
                             NotesXplain
                         </h1>
