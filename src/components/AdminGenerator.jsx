@@ -755,6 +755,13 @@ const AdminGenerator = () => {
                                                             >
                                                                 🖼️ Image
                                                             </button>
+                                                            <button
+                                                                onClick={() => insertContent('\n<iframe src="/pdfs/filename.pdf" width="100%" height="600px" className="rounded-xl border-2 border-gray-100 dark:border-gray-800 shadow-sm"></iframe>\n')}
+                                                                className="px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 rounded-lg text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                                                                title="Embed PDF"
+                                                            >
+                                                                📄 PDF
+                                                            </button>
                                                         </div>
                                                     </div>
                                                     <textarea
