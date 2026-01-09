@@ -10,7 +10,7 @@ export const LANGUAGE_VERSIONS = {
     javascript: '18.15.0'
 };
 
-export const executeCode = async (language, sourceCode) => {
+export const executeCode = async (language, sourceCode, stdin = '') => {
     try {
         const response = await axios.post(`${API_URL}/execute`, {
             language: language,
@@ -20,6 +20,7 @@ export const executeCode = async (language, sourceCode) => {
                     content: sourceCode,
                 },
             ],
+            stdin: stdin,
         });
         return response.data;
     } catch (error) {

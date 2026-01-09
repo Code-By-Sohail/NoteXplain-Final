@@ -72,6 +72,8 @@ engineering_life()
     const [output, setOutput] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isError, setIsError] = useState(false);
+    const [stdin, setStdin] = useState("");
+    const [terminalHint, setTerminalHint] = useState(null);
 
     const editorRef = useRef();
 
@@ -129,11 +131,73 @@ engineering_life()
 
         setIsLoading(true);
         setIsError(false);
+        setIsLoading(true);
+        setIsError(false);
         setOutput(null);
+        // Do NOT clear hint here, let it persist until success or update
+        // setTerminalHint(null);
 
+        // Smart Input Detection: Check if code uses input functions
+        const needsInput = (
+            (language === 'javascript' && /\bprompt\s*\(/.test(sourceCode)) ||
+            (language === 'python' && /\binput\s*\(/.test(sourceCode)) ||
+            (language === 'java' && /(\bScanner\b|\bSystem\.in\b|\bConsole\b)/.test(sourceCode)) ||
+            (language === 'c' && /(\bscanf\b|\bgets\b|\bfgets\b)/.test(sourceCode)) ||
+            (language === 'cpp' && /(\bcin\b|\bgetline\b)/.test(sourceCode))
+        );
+
+        // Set ephemeral hint ONLY if input is detected
+        if (needsInput) {
+            if (language === 'javascript') {
+                setTerminalHint("✨ Live Input Active: Check browser dialog");
+            } else {
+                setTerminalHint("Waiting for Input? Type values in STDIN box below & Run Code again");
+            }
+        } else {
+            setTerminalHint(null); // Clear hint if code doesn't need input
+        }
+
+        // Client-side execution for JavaScript to support live interaction (prompt/alert)
+        if (language === 'javascript') {
+            const logs = [];
+            const originalLog = console.log;
+            const originalError = console.error;
+
+            // Override console methods to capture output
+            console.log = (...args) => logs.push(args.join(' '));
+            console.error = (...args) => logs.push('Error: ' + args.join(' '));
+
+            try {
+                // Execute code - prompt() will work natively
+                // Using new Function to run in global scope but safer than direct eval
+                new Function(sourceCode)();
+                setOutput(logs.length > 0 ? logs : ["(No output)"]);
+                setTerminalHint(null); // Clear hint on success immediately
+                setIsError(false);
+            } catch (err) {
+                console.error(err.toString());
+                setOutput([...logs, `Error: ${err.message}`]);
+                setIsError(true);
+            } finally {
+                // Restore console methods
+                console.log = originalLog;
+                console.error = originalError;
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        // Server-side execution for other languages
         try {
-            const { run: result } = await executeCode(language, sourceCode);
+            const { run: result } = await executeCode(language, sourceCode, stdin);
             setOutput(result.output.split('\n'));
+
+            // Only hide hint if run was SUCCESSFUL (no error)
+            // If code failed (e.g. EOFError from missing input), hint stays!
+            if (!result.stderr) {
+                setTerminalHint(null);
+            }
+
             setIsError(!!result.stderr);
         } catch (error) {
             console.error(error);
@@ -153,7 +217,16 @@ engineering_life()
             c: `#include <stdio.h>\n\nint main() {\n    printf("Hello from C! 🚀");\n    return 0;\n}`,
             cpp: `#include <iostream>\n\nint main() {\n    std::cout << "Hello from C++! ⚡" << std::endl;\n    return 0;\n}`,
             java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java! ☕");\n    }\n}`,
-            javascript: `console.log("Hello from JavaScript! 💛");`
+            javascript: `// ✨ Live Interactive JavaScript
+// You can use prompt() for input!
+
+const name = prompt("What is your name?");
+if (name) {
+    console.log("Hello, " + name + "! 👋");
+    console.log("Welcome to NoteXplain Playground.");
+} else {
+    console.log("Hello stranger! 👋");
+}`
         };
 
         setCode(snippets[lang] || '');
@@ -168,22 +241,13 @@ engineering_life()
     ];
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-emerald-500/30 overflow-hidden flex flex-col items-center justify-center relative">
+        <div className="h-screen w-full bg-[#0a0a0a] text-white font-sans selection:bg-emerald-500/30 overflow-hidden flex flex-col relative">
 
-            {/* Background Ambience */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-emerald-500/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[150px]" />
-                <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px]" />
-                {/* Grid Pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black,transparent)]" />
-            </div>
-
-            {/* Main IDE Container */}
-            <div className="relative z-10 w-full max-w-[95%] h-[90vh] bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl flex flex-row overflow-hidden ring-1 ring-white/5">
+            {/* Main IDE Container - Full Screen */}
+            <div className="relative z-10 w-full h-full bg-black/40 backdrop-blur-2xl border-none shadow-none flex flex-row overflow-hidden">
 
                 {/* Sidebar - Language Selector */}
-                <div className="w-16 bg-black/20 border-r border-white/5 flex flex-col items-center py-6 gap-4 backdrop-blur-md">
+                <div className="w-16 bg-[#111111] border-r border-white/10 flex flex-col items-center py-6 gap-4 backdrop-blur-md">
                     {LANGUAGES.map((lang) => (
                         <button
                             key={lang.id}
@@ -220,7 +284,6 @@ engineering_life()
                                 <span className="font-bold tracking-wider text-sm">EDITOR</span>
                             </div>
 
-                            {/* Current Language Badge (since dropdown is gone) */}
                             <div className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-mono text-gray-400 uppercase tracking-widest">
                                 {language}
                             </div>
@@ -300,13 +363,13 @@ engineering_life()
                 </div>
 
                 {/* Right Panel: Output Terminal */}
-                <div className={`md:w-[40%] w-full bg-[#0d1117] flex flex-col border-l border-white/5 relative`}>
+                <div className={`md:w-[40%] w-full bg-[#111111] flex flex-col border-l border-white/10 relative`}>
 
                     {/* Terminal Header */}
-                    <div className="h-14 px-5 flex items-center justify-between bg-white/5 border-b border-white/5 backdrop-blur-md">
+                    <div className="h-14 px-5 flex items-center justify-between bg-[#111111] border-b border-white/10">
                         <div className="flex items-center gap-2 text-gray-400">
                             <Terminal className="w-4 h-4" />
-                            <span className="font-bold text-xs tracking-widest">TERMINAL OUTPUT</span>
+                            <span className="font-bold text-xs tracking-widest">TERMINAL</span>
                         </div>
                         {output && (
                             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/5">
@@ -318,35 +381,71 @@ engineering_life()
                         )}
                     </div>
 
-                    {/* Output Content */}
-                    <div className="flex-1 p-6 font-mono text-sm overflow-auto custom-scrollbar relative group">
-                        {output ? (
-                            <div className="space-y-1 animate-fade-in">
-                                <div className="text-gray-500 text-xs mb-4 select-none flex items-center gap-2">
-                                    <span>$</span>
-                                    <span>executing {language}_script...</span>
+                    {/* Terminal Content Area */}
+                    <div className="flex-1 flex flex-col min-h-0">
+                        {/* Output Scrollable Area */}
+                        <div className="flex-1 p-6 font-mono text-sm overflow-auto custom-scrollbar">
+
+                            {/* Ephemeral Hint - Always visible if active */}
+                            {terminalHint && (
+                                <div className="mb-4 px-4 py-3 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r text-sm text-emerald-400 font-bold animate-fade-in flex items-center gap-2 shadow-lg">
+                                    {terminalHint}
                                 </div>
-                                {output.map((line, i) => (
-                                    <div key={i} className={`${isError ? 'text-red-400' : 'text-gray-300'} whitespace-pre-wrap break-words leading-relaxed`}>
-                                        {line}
+                            )}
+
+                            {output ? (
+                                <div className="space-y-1 animate-fade-in">
+                                    <div className="text-gray-500 text-xs mb-4 select-none flex items-center gap-2">
+                                        <span>$</span>
+                                        <span>executing {language}_script...</span>
                                     </div>
-                                ))}
-                                <div className="mt-4 flex items-center gap-2 text-emerald-500/50 text-xs select-none">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    <span>Process finished</span>
+
+                                    {output.map((line, i) => (
+                                        <div key={i} className={`${isError ? 'text-red-400' : 'text-gray-300'} whitespace-pre-wrap break-words leading-relaxed`}>
+                                            {line}
+                                        </div>
+                                    ))}
+                                    <div className="mt-4 flex items-center gap-2 text-emerald-500/50 text-xs select-none">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        <span>Process finished</span>
+                                    </div>
                                 </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-600/50 space-y-4 select-none">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-2 group-hover:bg-white/10 transition-colors">
+                                        <Play className="w-6 h-6 ml-1 opacity-50" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium text-gray-500">Ready to execute</p>
+                                        <p className="text-xs text-gray-600 mt-1">Press Run to compile & execute</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Integrated Input Area */}
+                        <div className="border-t border-white/10 bg-[#111111]">
+                            <div className="flex items-start px-4 py-3 gap-3">
+                                <div className="text-emerald-500 font-mono text-sm font-bold flex items-center gap-2 whitespace-nowrap pt-1">
+                                    <span className="animate-pulse">❯</span>
+                                    <span>STDIN</span>
+                                </div>
+                                <textarea
+                                    value={stdin}
+                                    onChange={(e) => setStdin(e.target.value)}
+                                    placeholder="Enter inputs here (Type each value on a new line)..."
+                                    className="flex-1 bg-transparent border-none outline-none text-gray-300 font-mono text-sm placeholder:text-gray-700 resize-none h-auto min-h-[150px] overflow-hidden leading-[28px]"
+                                    rows={Math.max(3, stdin.split('\n').length)}
+                                    style={{
+                                        height: 'auto',
+                                        minHeight: '150px',
+                                        backgroundImage: 'linear-gradient(transparent 27px, rgba(255, 255, 255, 0.1) 27px)',
+                                        backgroundSize: '100% 28px',
+                                        backgroundAttachment: 'local'
+                                    }}
+                                />
                             </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600/50 space-y-4 select-none">
-                                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-2 group-hover:bg-white/10 transition-colors">
-                                    <Play className="w-6 h-6 ml-1 opacity-50" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-500">Ready to execute</p>
-                                    <p className="text-xs text-gray-600 mt-1">Press Run to compile & execute</p>
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
