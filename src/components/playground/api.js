@@ -7,7 +7,8 @@ export const LANGUAGE_VERSIONS = {
     c: '10.2.0',
     cpp: '10.2.0',
     java: '15.0.2',
-    javascript: '18.15.0'
+    javascript: '18.15.0',
+    bash: '5.2.0'
 };
 
 export const executeCode = async (language, sourceCode) => {
