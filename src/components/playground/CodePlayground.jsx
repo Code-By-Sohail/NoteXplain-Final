@@ -137,7 +137,8 @@ engineering_life()
         // Do NOT clear hint here, let it persist until success or update
         // setTerminalHint(null);
 
-        // Smart Input Detection: Check if code uses input functions
+        // Smart Input Detection & Prompt Extraction
+        let customPrompts = [];
         const needsInput = (
             (language === 'javascript' && /\bprompt\s*\(/.test(sourceCode)) ||
             (language === 'python' && /\binput\s*\(/.test(sourceCode)) ||
@@ -146,15 +147,52 @@ engineering_life()
             (language === 'cpp' && /(\bcin\b|\bgetline\b)/.test(sourceCode))
         );
 
-        // Set ephemeral hint ONLY if input is detected
         if (needsInput) {
+            // Attempt to extract all prompt texts to show helpful hint
+            try {
+                if (language === 'python') {
+                    const matches = [...sourceCode.matchAll(/input\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                    customPrompts = matches.map(m => m[1]);
+                } else if (language === 'javascript') {
+                    const matches = [...sourceCode.matchAll(/prompt\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                    customPrompts = matches.map(m => m[1]);
+                } else if (language === 'java') {
+                    const matches = [...sourceCode.matchAll(/System\.out\.print(?:ln)?\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                    // For Java/C, we might pick up too many prints, so maybe just take the last few or unique ones
+                    // But for now, let's try to capture them if they seem relevant (naïve approach)
+                    // A better heuristic might be needed, but sticking to "all string literals in prints" 
+                    // might be noisy. Let's limit to max 3 recent distinct ones or just the identified ones.
+                    // Actually, usually the print strictly precedes the input.
+                    customPrompts = matches.map(m => m[1]);
+                } else if (language === 'c') {
+                    const matches = [...sourceCode.matchAll(/printf\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                    customPrompts = matches.map(m => m[1]);
+                } else if (language === 'cpp') {
+                    const matches = [...sourceCode.matchAll(/std::cout\s*<<\s*["']([^"']+)["']|cout\s*<<\s*["']([^"']+)["']/g)];
+                    customPrompts = matches.map(m => m[1] || m[2]);
+                }
+            } catch (e) {
+                console.warn("Prompt extraction failed", e);
+            }
+
+            // Limit to first 3 prompts to avoid huge hints
+            if (customPrompts.length > 3) {
+                customPrompts = customPrompts.slice(0, 3);
+                customPrompts.push("...");
+            }
+
             if (language === 'javascript') {
                 setTerminalHint("✨ Live Input Active: Check browser dialog");
             } else {
-                setTerminalHint("Waiting for Input? Type values in STDIN box below & Run Code again");
+                if (customPrompts.length > 0) {
+                    const promptList = customPrompts.map(p => `• "${p}"`).join('\n');
+                    setTerminalHint(`Program Asking:\n${promptList}\n\nType values in the STDIN box below (each on a new line) and Run Code again ⬇️`);
+                } else {
+                    setTerminalHint("Waiting for Input?\n• Type values in the STDIN box below (each on a new line)\n• Run Code again ⬇️");
+                }
             }
         } else {
-            setTerminalHint(null); // Clear hint if code doesn't need input
+            setTerminalHint(null);
         }
 
         // Client-side execution for JavaScript to support live interaction (prompt/alert)
@@ -388,7 +426,7 @@ if (name) {
 
                             {/* Ephemeral Hint - Always visible if active */}
                             {terminalHint && (
-                                <div className="mb-4 px-4 py-3 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r text-sm text-emerald-400 font-bold animate-fade-in flex items-center gap-2 shadow-lg">
+                                <div className="mb-4 px-4 py-3 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r text-sm text-emerald-400 font-bold animate-fade-in flex flex-col items-start gap-1 shadow-lg whitespace-pre-wrap leading-relaxed">
                                     {terminalHint}
                                 </div>
                             )}
