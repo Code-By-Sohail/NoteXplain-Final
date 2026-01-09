@@ -234,9 +234,47 @@ engineering_life()
             // If code failed (e.g. EOFError from missing input), hint stays!
             if (!result.stderr) {
                 setTerminalHint(null);
-            }
 
-            setIsError(!!result.stderr);
+                // --- Simulate Input Echo in Output (User Request) ---
+                // Injects the stdin values into the output string after the prompts
+                // to make it look like a real interactive terminal session.
+                let simulatedOutput = result.output;
+                const inputLines = stdin.split('\n');
+
+                if (customPrompts.length > 0 && inputLines.length > 0) {
+                    let currentOutput = simulatedOutput;
+                    let processedOutput = "";
+                    let inputIndex = 0;
+
+                    // Naive injection: sequentially find prompts and insert inputs
+                    for (const promptText of customPrompts) {
+                        if (inputIndex >= inputLines.length) break;
+
+                        const idx = currentOutput.indexOf(promptText);
+                        if (idx !== -1) {
+                            // Found prompt, append it and the input
+                            const part1 = currentOutput.substring(0, idx + promptText.length);
+                            const remainder = currentOutput.substring(idx + promptText.length);
+
+                            // Add input value (and a newline to mimic Enter key press)
+                            const inputValue = inputLines[inputIndex];
+                            processedOutput += part1 + " " + inputValue + "\n";
+
+                            currentOutput = remainder;
+                            inputIndex++;
+                        } else {
+                            // Prompt not found in remaining text (maybe ordering issue or dynamic string)
+                            // Just keep going
+                        }
+                    }
+                    processedOutput += currentOutput; // Append whatever is left
+                    simulatedOutput = processedOutput;
+                }
+
+                setOutput(simulatedOutput.split('\n'));
+            } else {
+                setOutput(result.output.split('\n'));
+            }
         } catch (error) {
             console.error(error);
             setIsError(true);
