@@ -226,6 +226,23 @@ engineering_life()
         }
 
         // Server-side execution for other languages
+
+        // BLOCKER: If input is required but STDIN is empty, stop execution!
+        // This prevents the "automatic zero output" issue.
+        if (needsInput && !stdin.trim()) {
+            setOutput([
+                "⚠️ Input Required",
+                "-----------------",
+                "This program expects input variables.",
+                "Please type values in the STDIN box below (one per line) and click Run Code again.",
+                "",
+                "(See 'Program Asking' hint above for details)"
+            ]);
+            setIsError(true);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const { run: result } = await executeCode(language, sourceCode, stdin);
             setOutput(result.output.split('\n'));
