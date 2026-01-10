@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
-import { Play, RotateCcw, Terminal, Code2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Play, RotateCcw, Terminal, Code2, CheckCircle2, Sparkles, Send } from 'lucide-react';
 import { executeCode, LANGUAGE_VERSIONS } from './api';
 
 // --- Official Style Language Icons ---
@@ -69,19 +69,40 @@ def engineering_life():
 
 engineering_life()
 `);
-    const [output, setOutput] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isError, setIsError] = useState(false);
-    const [stdin, setStdin] = useState("");
-    const [terminalHint, setTerminalHint] = useState(null);
+
+    // Interactive Terminal State
+    const [terminalHistory, setTerminalHistory] = useState([]); // Terminal output lines
+    const [isInteractiveMode, setIsInteractiveMode] = useState(false);
+    const [currentPrompt, setCurrentPrompt] = useState(''); // Current prompt text
+    const [pendingPrompts, setPendingPrompts] = useState([]); // Remaining prompts
+    const [collectedInputs, setCollectedInputs] = useState([]); // User inputs collected
+    const [currentInput, setCurrentInput] = useState(''); // What user is typing
+    const [programCode, setProgramCode] = useState(''); // Code to execute
 
     const editorRef = useRef();
+    const terminalInputRef = useRef();
+    const terminalEndRef = useRef();
+
+    // Auto-scroll terminal to bottom
+    useEffect(() => {
+        if (terminalEndRef.current) {
+            terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [terminalHistory, currentPrompt]);
+
+    // Focus input when interactive mode starts
+    useEffect(() => {
+        if (isInteractiveMode && terminalInputRef.current) {
+            terminalInputRef.current.focus();
+        }
+    }, [isInteractiveMode, currentPrompt]);
 
     const onMount = (editor) => {
         editorRef.current = editor;
         editor.focus();
 
-        // Add "Paste Code" action to context menu to fix browser permission issues
         editor.addAction({
             id: 'custom-paste-action',
             label: 'Paste Code',
@@ -91,11 +112,7 @@ engineering_life()
                 try {
                     const text = await navigator.clipboard.readText();
                     const selection = ed.getSelection();
-                    const op = {
-                        range: selection,
-                        text: text,
-                        forceMoveMarkers: true
-                    };
+                    const op = { range: selection, text: text, forceMoveMarkers: true };
                     ed.executeEdits("my-source", [op]);
                 } catch (err) {
                     console.error('Failed to read clipboard contents: ', err);
@@ -110,13 +127,7 @@ engineering_life()
             const text = await navigator.clipboard.readText();
             if (editorRef.current) {
                 const selection = editorRef.current.getSelection();
-                const id = { major: 1, minor: 1 };
-                const op = {
-                    identifier: id,
-                    range: selection,
-                    text: text,
-                    forceMoveMarkers: true
-                };
+                const op = { identifier: { major: 1, minor: 1 }, range: selection, text: text, forceMoveMarkers: true };
                 editorRef.current.executeEdits("my-source", [op]);
             }
         } catch (err) {
@@ -125,99 +136,165 @@ engineering_life()
         }
     };
 
+    // Extract prompts from code
+    const extractPrompts = (sourceCode, lang) => {
+        let prompts = [];
+        try {
+            if (lang === 'python') {
+                const matches = [...sourceCode.matchAll(/input\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                prompts = matches.map(m => m[1]);
+            } else if (lang === 'javascript') {
+                const matches = [...sourceCode.matchAll(/prompt\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                prompts = matches.map(m => m[1]);
+            } else if (lang === 'c') {
+                // For C: Extract printf prompts that come before scanf
+                const matches = [...sourceCode.matchAll(/printf\s*\(\s*["']([^"']+)["']/g)];
+                prompts = matches.map(m => m[1].replace(/\\n/g, '').replace(/%\w/g, '').trim()).filter(p => p);
+            } else if (lang === 'cpp') {
+                const matches = [...sourceCode.matchAll(/(?:std::)?cout\s*<<\s*["']([^"']+)["']/g)];
+                prompts = matches.map(m => m[1].replace(/\\n/g, '').trim()).filter(p => p);
+            } else if (lang === 'java') {
+                const matches = [...sourceCode.matchAll(/System\.out\.print(?:ln)?\s*\(\s*["']([^"']+)["']\s*\)/g)];
+                prompts = matches.map(m => m[1]);
+            }
+        } catch (e) {
+            console.warn("Prompt extraction failed", e);
+        }
+        return prompts;
+    };
+
+    // Check if code needs input
+    const needsInput = (sourceCode, lang) => {
+        return (
+            (lang === 'javascript' && /\bprompt\s*\(/.test(sourceCode)) ||
+            (lang === 'python' && /\binput\s*\(/.test(sourceCode)) ||
+            (lang === 'java' && /(\bScanner\b|\bSystem\.in\b|\bConsole\b)/.test(sourceCode)) ||
+            (lang === 'c' && /(\bscanf\b|\bgets\b|\bfgets\b)/.test(sourceCode)) ||
+            (lang === 'cpp' && /(\bcin\b|\bgetline\b)/.test(sourceCode))
+        );
+    };
+
+    // Count expected inputs
+    const countExpectedInputs = (sourceCode, lang) => {
+        let count = 0;
+        try {
+            if (lang === 'python') {
+                count = (sourceCode.match(/\binput\s*\(/g) || []).length;
+            } else if (lang === 'javascript') {
+                count = (sourceCode.match(/\bprompt\s*\(/g) || []).length;
+            } else if (lang === 'c') {
+                count = (sourceCode.match(/\bscanf\s*\(/g) || []).length;
+            } else if (lang === 'cpp') {
+                count = (sourceCode.match(/\bcin\s*>>/g) || []).length;
+            } else if (lang === 'java') {
+                count = (sourceCode.match(/\.next(?:Line|Int|Double|Float)?\s*\(/g) || []).length;
+            }
+        } catch (e) {
+            console.warn("Input count failed", e);
+        }
+        return count;
+    };
+
+    // Execute final code with all inputs
+    const executeFinalCode = async (sourceCode, inputs) => {
+        const stdin = inputs.join('\n');
+        setIsLoading(true);
+
+        try {
+            const { run: result } = await executeCode(language, sourceCode, stdin);
+
+            // Parse and display output with inputs interleaved
+            const outputLines = result.output.split('\n');
+
+            setTerminalHistory(prev => [
+                ...prev,
+                { type: 'output', content: outputLines.join('\n') }
+            ]);
+
+            if (result.stderr) {
+                setIsError(true);
+            }
+        } catch (error) {
+            console.error(error);
+            setIsError(true);
+            setTerminalHistory(prev => [
+                ...prev,
+                { type: 'error', content: 'Error connecting to execution server.' }
+            ]);
+        } finally {
+            setIsLoading(false);
+            setIsInteractiveMode(false);
+            setCurrentPrompt('');
+        }
+    };
+
+    // Handle Enter key in terminal input
+    const handleInputSubmit = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+
+            const trimmedInput = currentInput;
+
+            // Add input to history
+            setTerminalHistory(prev => [
+                ...prev,
+                { type: 'prompt', content: currentPrompt },
+                { type: 'input', content: trimmedInput }
+            ]);
+
+            // Store input
+            const newInputs = [...collectedInputs, trimmedInput];
+            setCollectedInputs(newInputs);
+            setCurrentInput('');
+
+            // Check if more prompts remain
+            if (pendingPrompts.length > 0) {
+                const [nextPrompt, ...remaining] = pendingPrompts;
+                setCurrentPrompt(nextPrompt);
+                setPendingPrompts(remaining);
+            } else {
+                // All inputs collected - execute!
+                setCurrentPrompt('');
+                executeFinalCode(programCode, newInputs);
+            }
+        }
+    };
+
+    // Main run function
     const runCode = async () => {
         const sourceCode = editorRef.current.getValue();
         if (!sourceCode) return;
 
+        // Reset state
         setIsLoading(true);
         setIsError(false);
-        setIsLoading(true);
-        setIsError(false);
-        setOutput(null);
-        // Do NOT clear hint here, let it persist until success or update
-        // setTerminalHint(null);
+        setTerminalHistory([{ type: 'system', content: `$ executing ${language}_script...` }]);
+        setCollectedInputs([]);
+        setCurrentInput('');
 
-        // Smart Input Detection & Prompt Extraction
-        let customPrompts = [];
-        const needsInput = (
-            (language === 'javascript' && /\bprompt\s*\(/.test(sourceCode)) ||
-            (language === 'python' && /\binput\s*\(/.test(sourceCode)) ||
-            (language === 'java' && /(\bScanner\b|\bSystem\.in\b|\bConsole\b)/.test(sourceCode)) ||
-            (language === 'c' && /(\bscanf\b|\bgets\b|\bfgets\b)/.test(sourceCode)) ||
-            (language === 'cpp' && /(\bcin\b|\bgetline\b)/.test(sourceCode))
-        );
-
-        if (needsInput) {
-            // Attempt to extract all prompt texts to show helpful hint
-            try {
-                if (language === 'python') {
-                    const matches = [...sourceCode.matchAll(/input\s*\(\s*["']([^"']+)["']\s*\)/g)];
-                    customPrompts = matches.map(m => m[1]);
-                } else if (language === 'javascript') {
-                    const matches = [...sourceCode.matchAll(/prompt\s*\(\s*["']([^"']+)["']\s*\)/g)];
-                    customPrompts = matches.map(m => m[1]);
-                } else if (language === 'java') {
-                    const matches = [...sourceCode.matchAll(/System\.out\.print(?:ln)?\s*\(\s*["']([^"']+)["']\s*\)/g)];
-                    // For Java/C, we might pick up too many prints, so maybe just take the last few or unique ones
-                    // But for now, let's try to capture them if they seem relevant (naïve approach)
-                    // A better heuristic might be needed, but sticking to "all string literals in prints" 
-                    // might be noisy. Let's limit to max 3 recent distinct ones or just the identified ones.
-                    // Actually, usually the print strictly precedes the input.
-                    customPrompts = matches.map(m => m[1]);
-                } else if (language === 'c') {
-                    const matches = [...sourceCode.matchAll(/printf\s*\(\s*["']([^"']+)["']\s*\)/g)];
-                    customPrompts = matches.map(m => m[1]);
-                } else if (language === 'cpp') {
-                    const matches = [...sourceCode.matchAll(/std::cout\s*<<\s*["']([^"']+)["']|cout\s*<<\s*["']([^"']+)["']/g)];
-                    customPrompts = matches.map(m => m[1] || m[2]);
-                }
-            } catch (e) {
-                console.warn("Prompt extraction failed", e);
-            }
-
-            // Limit to first 3 prompts to avoid huge hints
-            if (customPrompts.length > 3) {
-                customPrompts = customPrompts.slice(0, 3);
-                customPrompts.push("...");
-            }
-
-            if (language === 'javascript') {
-                setTerminalHint("✨ Live Input Active: Check browser dialog");
-            } else {
-                if (customPrompts.length > 0) {
-                    const promptList = customPrompts.map(p => `• "${p}"`).join('\n');
-                    setTerminalHint(`Program Asking:\n${promptList}\n\nType values in the STDIN box below (each on a new line) and Run Code again ⬇️`);
-                } else {
-                    setTerminalHint("Waiting for Input?\n• Type values in the STDIN box below (each on a new line)\n• Run Code again ⬇️");
-                }
-            }
-        } else {
-            setTerminalHint(null);
-        }
-
-        // Client-side execution for JavaScript to support live interaction (prompt/alert)
+        // JavaScript runs client-side
         if (language === 'javascript') {
             const logs = [];
             const originalLog = console.log;
             const originalError = console.error;
 
-            // Override console methods to capture output
             console.log = (...args) => logs.push(args.join(' '));
             console.error = (...args) => logs.push('Error: ' + args.join(' '));
 
             try {
-                // Execute code - prompt() will work natively
-                // Using new Function to run in global scope but safer than direct eval
                 new Function(sourceCode)();
-                setOutput(logs.length > 0 ? logs : ["(No output)"]);
-                setTerminalHint(null); // Clear hint on success immediately
-                setIsError(false);
+                setTerminalHistory(prev => [
+                    ...prev,
+                    { type: 'output', content: logs.length > 0 ? logs.join('\n') : '(No output)' }
+                ]);
             } catch (err) {
-                console.error(err.toString());
-                setOutput([...logs, `Error: ${err.message}`]);
+                setTerminalHistory(prev => [
+                    ...prev,
+                    { type: 'output', content: logs.join('\n') },
+                    { type: 'error', content: `Error: ${err.message}` }
+                ]);
                 setIsError(true);
             } finally {
-                // Restore console methods
                 console.log = originalLog;
                 console.error = originalError;
                 setIsLoading(false);
@@ -225,85 +302,59 @@ engineering_life()
             return;
         }
 
-        // Server-side execution for other languages
+        // Check if code needs input
+        if (needsInput(sourceCode, language)) {
+            const prompts = extractPrompts(sourceCode, language);
+            const expectedCount = countExpectedInputs(sourceCode, language);
 
-        // BLOCKER: If input is required but STDIN is empty, stop execution!
-        // This prevents the "automatic zero output" issue.
-        if (needsInput && !stdin.trim()) {
-            setOutput([
-                "⚠️ Input Required",
-                "-----------------",
-                "This program expects input variables.",
-                "Please type values in the STDIN box below (one per line) and click Run Code again.",
-                "",
-                "(See 'Program Asking' hint above for details)"
-            ]);
-            setIsError(true);
-            setIsLoading(false);
-            return;
+            // Generate prompts if none extracted
+            let allPrompts = prompts.length > 0 ? prompts : [];
+
+            // If we have fewer prompts than expected inputs, add generic ones
+            while (allPrompts.length < expectedCount) {
+                allPrompts.push(`Input ${allPrompts.length + 1}:`);
+            }
+
+            if (allPrompts.length > 0) {
+                // Start interactive mode
+                setProgramCode(sourceCode);
+                setIsInteractiveMode(true);
+                setCurrentPrompt(allPrompts[0]);
+                setPendingPrompts(allPrompts.slice(1));
+                setIsLoading(false);
+                return;
+            }
         }
 
+        // No input needed - execute directly
         try {
-            const { run: result } = await executeCode(language, sourceCode, stdin);
-            setOutput(result.output.split('\n'));
-
-            // Only hide hint if run was SUCCESSFUL (no error)
-            // If code failed (e.g. EOFError from missing input), hint stays!
-            if (!result.stderr) {
-                setTerminalHint(null);
-
-                // --- Simulate Input Echo in Output (User Request) ---
-                // Injects the stdin values into the output string after the prompts
-                // to make it look like a real interactive terminal session.
-                let simulatedOutput = result.output;
-                const inputLines = stdin.split('\n');
-
-                if (customPrompts.length > 0 && inputLines.length > 0) {
-                    let currentOutput = simulatedOutput;
-                    let processedOutput = "";
-                    let inputIndex = 0;
-
-                    // Naive injection: sequentially find prompts and insert inputs
-                    for (const promptText of customPrompts) {
-                        if (inputIndex >= inputLines.length) break;
-
-                        const idx = currentOutput.indexOf(promptText);
-                        if (idx !== -1) {
-                            // Found prompt, append it and the input
-                            const part1 = currentOutput.substring(0, idx + promptText.length);
-                            const remainder = currentOutput.substring(idx + promptText.length);
-
-                            // Add input value (and a newline to mimic Enter key press)
-                            const inputValue = inputLines[inputIndex];
-                            processedOutput += part1 + " " + inputValue + "\n";
-
-                            currentOutput = remainder;
-                            inputIndex++;
-                        } else {
-                            // Prompt not found in remaining text (maybe ordering issue or dynamic string)
-                            // Just keep going
-                        }
-                    }
-                    processedOutput += currentOutput; // Append whatever is left
-                    simulatedOutput = processedOutput;
-                }
-
-                setOutput(simulatedOutput.split('\n'));
-            } else {
-                setOutput(result.output.split('\n'));
+            const { run: result } = await executeCode(language, sourceCode, '');
+            setTerminalHistory(prev => [
+                ...prev,
+                { type: 'output', content: result.output }
+            ]);
+            if (result.stderr) {
+                setIsError(true);
             }
         } catch (error) {
             console.error(error);
             setIsError(true);
-            setOutput(["Error connecting to execution server."]);
+            setTerminalHistory(prev => [
+                ...prev,
+                { type: 'error', content: 'Error connecting to execution server.' }
+            ]);
         } finally {
             setIsLoading(false);
         }
     };
 
-
     const handleLanguageChange = (lang) => {
         setLanguage(lang);
+        setTerminalHistory([]);
+        setIsInteractiveMode(false);
+        setCurrentPrompt('');
+        setPendingPrompts([]);
+        setCollectedInputs([]);
 
         const snippets = {
             python: `print("Hello from Python! 🐍")`,
@@ -455,7 +506,7 @@ if (name) {
                     </div>
                 </div>
 
-                {/* Right Panel: Output Terminal */}
+                {/* Right Panel: Interactive Terminal */}
                 <div className={`md:w-[40%] w-full bg-[#111111] flex flex-col border-l border-white/10 relative`}>
 
                     {/* Terminal Header */}
@@ -463,8 +514,13 @@ if (name) {
                         <div className="flex items-center gap-2 text-gray-400">
                             <Terminal className="w-4 h-4" />
                             <span className="font-bold text-xs tracking-widest">TERMINAL</span>
+                            {isInteractiveMode && (
+                                <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold animate-pulse">
+                                    INTERACTIVE
+                                </span>
+                            )}
                         </div>
-                        {output && (
+                        {terminalHistory.length > 0 && !isInteractiveMode && (
                             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/5">
                                 <div className={`w-1.5 h-1.5 rounded-full ${isError ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse`} />
                                 <span className={`text-[10px] uppercase font-bold ${isError ? 'text-red-400' : 'text-emerald-400'}`}>
@@ -474,38 +530,15 @@ if (name) {
                         )}
                     </div>
 
-                    {/* Terminal Content Area */}
-                    <div className="flex-1 flex flex-col min-h-0">
-                        {/* Output Scrollable Area */}
-                        <div className="flex-1 p-6 font-mono text-sm overflow-auto custom-scrollbar">
-
-                            {/* Ephemeral Hint - Always visible if active */}
-                            {terminalHint && (
-                                <div className="mb-4 px-4 py-3 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r text-sm text-emerald-400 font-bold animate-fade-in flex flex-col items-start gap-1 shadow-lg whitespace-pre-wrap leading-relaxed">
-                                    {terminalHint}
-                                </div>
-                            )}
-
-                            {output ? (
-                                <div className="space-y-1 animate-fade-in">
-                                    <div className="text-gray-500 text-xs mb-4 select-none flex items-center gap-2">
-                                        <span>$</span>
-                                        <span>executing {language}_script...</span>
-                                    </div>
-
-                                    {output.map((line, i) => (
-                                        <div key={i} className={`${isError ? 'text-red-400' : 'text-gray-300'} whitespace-pre-wrap break-words leading-relaxed`}>
-                                            {line}
-                                        </div>
-                                    ))}
-                                    <div className="mt-4 flex items-center gap-2 text-emerald-500/50 text-xs select-none">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        <span>Process finished</span>
-                                    </div>
-                                </div>
-                            ) : (
+                    {/* Terminal Content - Scrollable */}
+                    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                        <div
+                            className="flex-1 p-4 font-mono text-sm overflow-auto custom-scrollbar"
+                            onClick={() => terminalInputRef.current?.focus()}
+                        >
+                            {terminalHistory.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-600/50 space-y-4 select-none">
-                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-2 group-hover:bg-white/10 transition-colors">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-2">
                                         <Play className="w-6 h-6 ml-1 opacity-50" />
                                     </div>
                                     <div className="text-center">
@@ -513,31 +546,62 @@ if (name) {
                                         <p className="text-xs text-gray-600 mt-1">Press Run to compile & execute</p>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            ) : (
+                                <div className="space-y-1 animate-fade-in">
+                                    {/* Render terminal history */}
+                                    {terminalHistory.map((line, i) => (
+                                        <div key={i} className={`whitespace-pre-wrap break-words leading-relaxed ${line.type === 'system' ? 'text-gray-500 text-xs' :
+                                            line.type === 'prompt' ? 'text-gray-300' :
+                                                line.type === 'input' ? 'text-emerald-400' :
+                                                    line.type === 'error' ? 'text-red-400' :
+                                                        'text-gray-300'
+                                            }`}>
+                                            {line.type === 'input' && <span className="text-gray-500">› </span>}
+                                            {line.content}
+                                        </div>
+                                    ))}
 
-                        {/* Integrated Input Area */}
-                        <div className="border-t border-white/10 bg-[#111111]">
-                            <div className="flex items-start px-4 py-3 gap-3">
-                                <div className="text-emerald-500 font-mono text-sm font-bold flex items-center gap-2 whitespace-nowrap pt-1">
-                                    <span className="animate-pulse">❯</span>
-                                    <span>STDIN</span>
+                                    {/* Current prompt and input field */}
+                                    {isInteractiveMode && currentPrompt && (
+                                        <div className="mt-2">
+                                            <div className="text-gray-300 whitespace-pre-wrap">{currentPrompt}</div>
+                                            <div className="flex items-center mt-1 bg-white/5 rounded-lg border border-emerald-500/30">
+                                                <span className="text-emerald-500 px-3 py-2">›</span>
+                                                <input
+                                                    ref={terminalInputRef}
+                                                    type="text"
+                                                    value={currentInput}
+                                                    onChange={(e) => setCurrentInput(e.target.value)}
+                                                    onKeyDown={handleInputSubmit}
+                                                    className="flex-1 bg-transparent border-none outline-none text-emerald-400 font-mono text-sm py-2 pr-3"
+                                                    placeholder="Type your input and press Enter..."
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => handleInputSubmit({ key: 'Enter', preventDefault: () => { } })}
+                                                    className="p-2 text-emerald-500 hover:text-emerald-400 transition-colors"
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div className="text-gray-600 text-xs mt-2">
+                                                Press Enter to submit input
+                                                {pendingPrompts.length > 0 && ` (${pendingPrompts.length} more input${pendingPrompts.length > 1 ? 's' : ''} remaining)`}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Process finished indicator */}
+                                    {!isInteractiveMode && terminalHistory.length > 1 && (
+                                        <div className="mt-4 flex items-center gap-2 text-emerald-500/50 text-xs select-none">
+                                            <CheckCircle2 className="w-3 h-3" />
+                                            <span>Process finished</span>
+                                        </div>
+                                    )}
+
+                                    <div ref={terminalEndRef} />
                                 </div>
-                                <textarea
-                                    value={stdin}
-                                    onChange={(e) => setStdin(e.target.value)}
-                                    placeholder="Enter inputs here (Type each value on a new line)..."
-                                    className="flex-1 bg-transparent border-none outline-none text-gray-300 font-mono text-sm placeholder:text-gray-700 resize-none h-auto min-h-[150px] overflow-hidden leading-[28px]"
-                                    rows={Math.max(3, stdin.split('\n').length)}
-                                    style={{
-                                        height: 'auto',
-                                        minHeight: '150px',
-                                        backgroundImage: 'linear-gradient(transparent 27px, rgba(255, 255, 255, 0.1) 27px)',
-                                        backgroundSize: '100% 28px',
-                                        backgroundAttachment: 'local'
-                                    }}
-                                />
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
